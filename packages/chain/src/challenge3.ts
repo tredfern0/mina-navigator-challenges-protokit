@@ -1,0 +1,65 @@
+import { RuntimeModule, runtimeModule, state, runtimeMethod } from "@proto-kit/module";
+import { State, assert, StateMap, Option } from "@proto-kit/protocol";
+import { Balance, Balances as BaseBalances, TokenId, UInt64 } from "@proto-kit/library";
+
+import { PublicKey, Struct, Field, Bool, Provable } from "o1js";
+
+export class Message extends Struct({ agentId: Field, messageNumber: UInt64, twelveChars: Field, securityCode: Field }) { }
+
+// This will be the stored state for each agent
+export class AgentInfo extends Struct({ messageNumber: UInt64, securityCode: Field }) { }
+
+type AgentMessagesStoreConfig = Record<string, never>;
+
+@runtimeModule()
+export class AgentMessagesStore extends RuntimeModule<AgentMessagesStoreConfig> {
+
+}
+// So convert this to hte other one...
+interface BalancesConfig {
+  totalSupply: Balance;
+}
+
+// TODO - convert from 'Balances' to 'AgentMessagesStore'
+@runtimeModule()
+export class Balances extends BaseBalances<BalancesConfig> {
+  @state() public circulatingSupply = State.from<Balance>(Balance);
+
+  @state() public agentMap = StateMap.from<Field, AgentInfo>(
+    Field,
+    AgentInfo
+  );
+
+
+  @runtimeMethod()
+  public initializeAgent(
+    agentId: Field,
+    securityCode: Field,
+  ): void {
+    // Initialize with 0 for the messageNumber
+    const newAgentInfo = new AgentInfo({ messageNumber: UInt64.from(0), securityCode });
+    this.agentMap.set(agentId, newAgentInfo);
+  }
+
+  @runtimeMethod()
+  public processMessage(
+    agentId: Field,
+    message: UInt64,
+  ): void {
+
+    const agentInfo: Option<AgentInfo> = this.agentMap.get(agentId);
+    // The agentId exists in the system
+    assert(agentInfo.isSome, "Agent does not exist!");
+
+    const agentInfoObj = new AgentInfo(agentInfo.value);
+
+    // TODO - add these checks
+    // The security code matches that held for that AgentID
+    // The message is of the correct length.
+    // The message number is greater than the highest so far for that agent.
+
+    // You should update the agent state to store the last message number received.
+    agentInfoObj.messageNumber = message;
+    this.agentMap.set(agentId, agentInfoObj);
+  }
+}
