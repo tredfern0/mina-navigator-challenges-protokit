@@ -23,7 +23,6 @@ interface BalancesConfig {
 // TODO - convert from 'Balances' to 'AgentMessagesStore'
 @runtimeModule()
 export class Balances extends BaseBalances<BalancesConfig> {
-  @state() public circulatingSupply = State.from<Balance>(Balance);
 
   @state() public agentMap = StateMap.from<Field, AgentInfo>(
     Field,
@@ -44,7 +43,7 @@ export class Balances extends BaseBalances<BalancesConfig> {
   @runtimeMethod()
   public processMessage(
     agentId: Field,
-    message: UInt64,
+    message: Message,
   ): void {
 
     const agentInfo: Option<AgentInfo> = this.agentMap.get(agentId);
@@ -55,11 +54,17 @@ export class Balances extends BaseBalances<BalancesConfig> {
 
     // TODO - add these checks
     // The security code matches that held for that AgentID
-    // The message is of the correct length.
+    assert(agentInfoObj.securityCode.equals(message.securityCode), "Security code does not match!");
+
+    // The message is of the correct length - assuming it can't have leading zeros?  Not exactly clear on requirement
+    assert(message.twelveChars.greaterThanOrEqual(100000000000), "Twelve chars is not 12 characters long!");
+    assert(message.twelveChars.lessThanOrEqual(999999999999), "Twelve chars is not 12 characters long!");
+
     // The message number is greater than the highest so far for that agent.
+    assert(agentInfoObj.messageNumber.lessThan(message.messageNumber), "Message number too low!");
 
     // You should update the agent state to store the last message number received.
-    agentInfoObj.messageNumber = message;
+    agentInfoObj.messageNumber = message.messageNumber;
     this.agentMap.set(agentId, agentInfoObj);
   }
 }
