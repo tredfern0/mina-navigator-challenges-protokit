@@ -1,19 +1,21 @@
 import { TestingAppChain } from "@proto-kit/sdk";
 import { PrivateKey, Field } from "o1js";
-import { Balances, Message, AgentInfo } from "../src/challenge3";
+import { AgentMessageStore, Message } from "../src/challenge3";
 import { log } from "@proto-kit/common";
-import { BalancesKey, TokenId, UInt64 } from "@proto-kit/library";
+import { UInt64 } from "@proto-kit/library";
 
 log.setLevel("ERROR");
 
 describe("agentMessagesStore", () => {
   it("should successfully store a message", async () => {
     const appChain = TestingAppChain.fromRuntime({
-      Balances,
+      AgentMessageStore,
     });
 
     appChain.configurePartial({
       Runtime: {
+        AgentMessageStore: {},
+        // If we don't configure balances we get an error?
         Balances: {
           totalSupply: UInt64.from(10000),
         },
@@ -28,13 +30,13 @@ describe("agentMessagesStore", () => {
 
     appChain.setSigner(alicePrivateKey);
 
-    const balances = appChain.runtime.resolve("Balances");
+    const ams = appChain.runtime.resolve("AgentMessageStore");
 
     const agentId: Field = Field(123);
     const securityCode: Field = Field(345);
 
     const tx1 = await appChain.transaction(alice, () => {
-      balances.initializeAgent(agentId, securityCode)
+      ams.initializeAgent(agentId, securityCode)
     });
 
     await tx1.sign();
@@ -44,7 +46,7 @@ describe("agentMessagesStore", () => {
     const newMessage: Message = new Message({ agentId, messageNumber: UInt64.from(888), twelveChars: Field(123456789101), securityCode: securityCode });
 
     const tx2 = await appChain.transaction(alice, () => {
-      balances.processMessage(agentId, newMessage)
+      ams.processMessage(agentId, newMessage)
     });
 
     await tx2.sign();
@@ -55,17 +57,18 @@ describe("agentMessagesStore", () => {
     expect(block2?.transactions[0].status.toBoolean()).toBe(true);
 
     // We should have updated the message number to 888
-    const agentVal = await appChain.query.runtime.Balances.agentMap.get(agentId);
+    const agentVal = await appChain.query.runtime.AgentMessageStore.agentMap.get(agentId);
     expect(agentVal?.messageNumber.toBigInt()).toBe(888n);
   }, 1_000_000);
 
   it("should fail on nonexistent agent", async () => {
     const appChain = TestingAppChain.fromRuntime({
-      Balances,
+      AgentMessageStore,
     });
 
     appChain.configurePartial({
       Runtime: {
+        AgentMessageStore: {},
         Balances: {
           totalSupply: UInt64.from(10000),
         },
@@ -80,14 +83,14 @@ describe("agentMessagesStore", () => {
 
     appChain.setSigner(alicePrivateKey);
 
-    const balances = appChain.runtime.resolve("Balances");
+    const ams = appChain.runtime.resolve("AgentMessageStore");
 
     // This agentId does NOT exist...
     const badAgentId: Field = Field(999);
     const securityCode: Field = Field(345);
     const newMessage: Message = new Message({ agentId: badAgentId, messageNumber: UInt64.from(888), twelveChars: Field(123456789101), securityCode: securityCode });
     const tx3 = await appChain.transaction(alice, () => {
-      balances.processMessage(badAgentId, newMessage)
+      ams.processMessage(badAgentId, newMessage)
     });
     await tx3.sign();
     await tx3.send();
@@ -97,17 +100,18 @@ describe("agentMessagesStore", () => {
     expect(block3?.transactions[0].status.toBoolean()).toBe(false);
 
     // And if we get the data it should be undefined?
-    const agentVal2 = await appChain.query.runtime.Balances.agentMap.get(badAgentId);
+    const agentVal2 = await appChain.query.runtime.AgentMessageStore.agentMap.get(badAgentId);
     expect(agentVal2).toBeUndefined();
   }, 1_000_000);
 
   it("should fail on bad security code", async () => {
     const appChain = TestingAppChain.fromRuntime({
-      Balances,
+      AgentMessageStore,
     });
 
     appChain.configurePartial({
       Runtime: {
+        AgentMessageStore: {},
         Balances: {
           totalSupply: UInt64.from(10000),
         },
@@ -122,13 +126,13 @@ describe("agentMessagesStore", () => {
 
     appChain.setSigner(alicePrivateKey);
 
-    const balances = appChain.runtime.resolve("Balances");
+    const ams = appChain.runtime.resolve("AgentMessageStore");
 
     const agentId: Field = Field(123);
     const securityCode: Field = Field(345);
 
     const tx1 = await appChain.transaction(alice, () => {
-      balances.initializeAgent(agentId, securityCode)
+      ams.initializeAgent(agentId, securityCode)
     });
 
     await tx1.sign();
@@ -139,7 +143,7 @@ describe("agentMessagesStore", () => {
     const newMessage: Message = new Message({ agentId, messageNumber: UInt64.from(888), twelveChars: Field(123456789101), securityCode: badSecurityCode });
 
     const tx2 = await appChain.transaction(alice, () => {
-      balances.processMessage(agentId, newMessage)
+      ams.processMessage(agentId, newMessage)
     });
 
     await tx2.sign();
@@ -153,11 +157,12 @@ describe("agentMessagesStore", () => {
 
   it("should fail if we don't have twelve characters", async () => {
     const appChain = TestingAppChain.fromRuntime({
-      Balances,
+      AgentMessageStore,
     });
 
     appChain.configurePartial({
       Runtime: {
+        AgentMessageStore: {},
         Balances: {
           totalSupply: UInt64.from(10000),
         },
@@ -172,13 +177,13 @@ describe("agentMessagesStore", () => {
 
     appChain.setSigner(alicePrivateKey);
 
-    const balances = appChain.runtime.resolve("Balances");
+    const ams = appChain.runtime.resolve("AgentMessageStore");
 
     const agentId: Field = Field(123);
     const securityCode: Field = Field(345);
 
     const tx1 = await appChain.transaction(alice, () => {
-      balances.initializeAgent(agentId, securityCode)
+      ams.initializeAgent(agentId, securityCode)
     });
 
     await tx1.sign();
@@ -191,7 +196,7 @@ describe("agentMessagesStore", () => {
     const newMessage2: Message = new Message({ agentId, messageNumber: UInt64.from(889), twelveChars: badTwelveCharsHigh, securityCode: securityCode });
 
     const tx2 = await appChain.transaction(alice, () => {
-      balances.processMessage(agentId, newMessage1)
+      ams.processMessage(agentId, newMessage1)
     });
 
     await tx2.sign();
@@ -199,7 +204,7 @@ describe("agentMessagesStore", () => {
     const block2 = await appChain.produceBlock();
 
     const tx3 = await appChain.transaction(alice, () => {
-      balances.processMessage(agentId, newMessage2)
+      ams.processMessage(agentId, newMessage2)
     });
 
     await tx3.sign();
@@ -215,11 +220,12 @@ describe("agentMessagesStore", () => {
 
   it("should fail on message number that is too low", async () => {
     const appChain = TestingAppChain.fromRuntime({
-      Balances,
+      AgentMessageStore,
     });
 
     appChain.configurePartial({
       Runtime: {
+        AgentMessageStore: {},
         Balances: {
           totalSupply: UInt64.from(10000),
         },
@@ -234,13 +240,13 @@ describe("agentMessagesStore", () => {
 
     appChain.setSigner(alicePrivateKey);
 
-    const balances = appChain.runtime.resolve("Balances");
+    const ams = appChain.runtime.resolve("AgentMessageStore");
 
     const agentId: Field = Field(123);
     const securityCode: Field = Field(345);
 
     const tx1 = await appChain.transaction(alice, () => {
-      balances.initializeAgent(agentId, securityCode)
+      ams.initializeAgent(agentId, securityCode)
     });
 
     await tx1.sign();
@@ -251,7 +257,7 @@ describe("agentMessagesStore", () => {
     const newMessage: Message = new Message({ agentId, messageNumber: UInt64.from(888), twelveChars: Field(123456789101), securityCode: securityCode });
 
     const tx2 = await appChain.transaction(alice, () => {
-      balances.processMessage(agentId, newMessage)
+      ams.processMessage(agentId, newMessage)
     });
 
     await tx2.sign();
@@ -266,7 +272,7 @@ describe("agentMessagesStore", () => {
     const newMessage2: Message = new Message({ agentId, messageNumber: messageNumberTooLow, twelveChars: Field(123456789101), securityCode: securityCode });
 
     const tx3 = await appChain.transaction(alice, () => {
-      balances.processMessage(agentId, newMessage2)
+      ams.processMessage(agentId, newMessage2)
     });
 
     await tx3.sign();
@@ -277,7 +283,7 @@ describe("agentMessagesStore", () => {
     expect(block3?.transactions[0].status.toBoolean()).toBe(false);
 
     // And message number should still be 888
-    const agentVal = await appChain.query.runtime.Balances.agentMap.get(agentId);
+    const agentVal = await appChain.query.runtime.AgentMessageStore.agentMap.get(agentId);
     expect(agentVal?.messageNumber.toBigInt()).toBe(888n);
 
   }, 1_000_000);
