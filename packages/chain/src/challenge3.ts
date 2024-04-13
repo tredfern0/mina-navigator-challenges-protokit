@@ -4,6 +4,8 @@ import { Balance, Balances as BaseBalances, TokenId, UInt64 } from "@proto-kit/l
 
 import { PublicKey, Struct, Field, Bool, Provable } from "o1js";
 
+// Not exactly clear what 'twelveChars' is, I asked in Slack but never got a response
+// Assuming it's a field that should be exactly twelve decimal characters long with no leading zeroes
 export class Message extends Struct({ agentId: Field, messageNumber: UInt64, twelveChars: Field, securityCode: Field }) { }
 
 // This will be the stored state for each agent
@@ -52,7 +54,6 @@ export class Balances extends BaseBalances<BalancesConfig> {
 
     const agentInfoObj = new AgentInfo(agentInfo.value);
 
-    // TODO - add these checks
     // The security code matches that held for that AgentID
     assert(agentInfoObj.securityCode.equals(message.securityCode), "Security code does not match!");
 
