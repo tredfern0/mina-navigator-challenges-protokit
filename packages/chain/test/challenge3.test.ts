@@ -35,6 +35,15 @@ describe("agentMessagesStore", () => {
     const agentId: Field = Field(123);
     const securityCode: Field = Field(345);
 
+
+    const tx0 = await appChain.transaction(alice, () => {
+      ams.claimAdmin()
+    });
+    await tx0.sign();
+    await tx0.send();
+    const block0 = await appChain.produceBlock();
+    expect(block0?.transactions[0].status.toBoolean()).toBe(true);
+
     const tx1 = await appChain.transaction(alice, () => {
       ams.initializeAgent(agentId, securityCode)
     });
@@ -131,6 +140,14 @@ describe("agentMessagesStore", () => {
     const agentId: Field = Field(123);
     const securityCode: Field = Field(345);
 
+    const tx0 = await appChain.transaction(alice, () => {
+      ams.claimAdmin()
+    });
+    await tx0.sign();
+    await tx0.send();
+    const block0 = await appChain.produceBlock();
+    expect(block0?.transactions[0].status.toBoolean()).toBe(true);
+
     const tx1 = await appChain.transaction(alice, () => {
       ams.initializeAgent(agentId, securityCode)
     });
@@ -181,6 +198,14 @@ describe("agentMessagesStore", () => {
 
     const agentId: Field = Field(123);
     const securityCode: Field = Field(345);
+
+    const tx0 = await appChain.transaction(alice, () => {
+      ams.claimAdmin()
+    });
+    await tx0.sign();
+    await tx0.send();
+    const block0 = await appChain.produceBlock();
+    expect(block0?.transactions[0].status.toBoolean()).toBe(true);
 
     const tx1 = await appChain.transaction(alice, () => {
       ams.initializeAgent(agentId, securityCode)
@@ -244,6 +269,14 @@ describe("agentMessagesStore", () => {
 
     const agentId: Field = Field(123);
     const securityCode: Field = Field(345);
+
+    const tx0 = await appChain.transaction(alice, () => {
+      ams.claimAdmin()
+    });
+    await tx0.sign();
+    await tx0.send();
+    const block0 = await appChain.produceBlock();
+    expect(block0?.transactions[0].status.toBoolean()).toBe(true);
 
     const tx1 = await appChain.transaction(alice, () => {
       ams.initializeAgent(agentId, securityCode)

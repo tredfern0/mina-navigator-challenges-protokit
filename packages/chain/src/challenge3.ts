@@ -1,7 +1,7 @@
 import { RuntimeModule, runtimeModule, state, runtimeMethod } from "@proto-kit/module";
-import { assert, StateMap, Option } from "@proto-kit/protocol";
+import { assert, StateMap, State, Option } from "@proto-kit/protocol";
 import { UInt64 } from "@proto-kit/library";
-import { Struct, Field } from "o1js";
+import { Struct, Field, PublicKey, Bool } from "o1js";
 
 // Not exactly clear what 'twelveChars' is, I asked in Slack but never got a response
 // Assuming it's a field that should be exactly twelve decimal characters long with no leading zeroes
@@ -18,11 +18,32 @@ export class AgentMessageStore extends RuntimeModule<unknown> {
     AgentInfo
   );
 
+  @state() public adminAddr = State.from<PublicKey>(PublicKey);
+
+  /*
+  After contract initialization, the administrator should claim
+  the contract by calling this method.  Then nobody else will
+  be able to add agents
+  */
+  @runtimeMethod()
+  public claimAdmin(
+  ): void {
+    const currAdmin = this.adminAddr.get();
+    const adminExists: Bool = currAdmin.isSome;
+    assert(adminExists.not(), "Admin already claimed!");
+    this.adminAddr.set(this.transaction.sender.value);
+  }
+
   @runtimeMethod()
   public initializeAgent(
     agentId: Field,
     securityCode: Field,
   ): void {
+    // Make sure only admin can add new agents
+    const currAdmin = this.adminAddr.get();
+    assert(currAdmin.isSome, "Admin must exist!");
+    assert(this.transaction.sender.value.equals(currAdmin.value), "Only admin can add agents!");
+
     // Initialize with 0 for the messageNumber
     const newAgentInfo = new AgentInfo({ messageNumber: UInt64.from(0), securityCode });
     this.agentMap.set(agentId, newAgentInfo);
