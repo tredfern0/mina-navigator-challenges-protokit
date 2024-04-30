@@ -11,5 +11,6 @@ nvm use
 pnpm install
 cd packages/chain
 npm run test -- challenge3
+npm run test -- challenge4
 ```
 
