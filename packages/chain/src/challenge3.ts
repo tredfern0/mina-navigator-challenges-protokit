@@ -3,6 +3,18 @@ import { assert, StateMap, State, Option } from "@proto-kit/protocol";
 import { UInt64 } from "@proto-kit/library";
 import { Struct, Field, PublicKey, Bool } from "o1js";
 
+
+/*
+The spymaster is worried that this design is not private.
+Is he correct ?
+How could you change the system to ensure that messages are private ?
+
+Answer:
+The spymaster is correct that the design is not private, all the inputs
+are public so anyone can see the messages and security codes.  To make
+it private we'd need to submit a proof instead of the raw data.
+*/
+
 // Not exactly clear what 'twelveChars' is, I asked in Slack but never got a response
 // Assuming it's a field that should be exactly twelve decimal characters long with no leading zeroes
 export class Message extends Struct({ agentId: Field, messageNumber: UInt64, twelveChars: Field, securityCode: Field }) { }
