@@ -1,7 +1,7 @@
 import { RuntimeModule, runtimeModule, state, runtimeMethod } from "@proto-kit/module";
 import { assert, StateMap, State, Option } from "@proto-kit/protocol";
 import { UInt64 } from "@proto-kit/library";
-import { Struct, Field, PublicKey, Bool, Experimental, Poseidon, Nullifier, MerkleMapWitness, MerkleWitness, MerkleTree } from "o1js";
+import { Struct, Field, PublicKey, Bool, Experimental, Poseidon } from "o1js";
 
 
 export class MessagePublicOutput extends Struct({
@@ -11,18 +11,18 @@ export class MessagePublicOutput extends Struct({
 }) { }
 
 export function verifyMessage(
-  agentId: Field,
   message: Message,
 ): MessagePublicOutput {
 
+  // Need to use reguluar assertions here, not protokit ones
   // The message is of the correct length - assuming it can't have leading zeros?  Not exactly clear on requirement
-  assert(message.twelveChars.greaterThanOrEqual(100000000000), "Twelve chars is not 12 characters long!");
-  assert(message.twelveChars.lessThanOrEqual(999999999999), "Twelve chars is not 12 characters long!");
+  message.twelveChars.assertGreaterThanOrEqual(100000000000, "Twelve chars is less than 12 characters!")
+  message.twelveChars.assertLessThanOrEqual(999999999999, "Twelve chars is more than 12 characters!")
 
   const securityCodeHash = Poseidon.hash([message.securityCode]);
 
   return new MessagePublicOutput({
-    agentId: agentId,
+    agentId: message.agentId,
     securityCodeHash: securityCodeHash,
     messageNumber: message.messageNumber,
   });
@@ -36,7 +36,7 @@ export const messageZKP = Experimental.ZkProgram({
   publicOutput: MessagePublicOutput,
   methods: {
     verifyMessage: {
-      privateInputs: [Field, Message],
+      privateInputs: [Message],
       method: verifyMessage,
     },
   },
